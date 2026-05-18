@@ -167,11 +167,15 @@ Not in v0.1. Not blockers for shipping. Documented here so they don't sneak back
 
 ## Notes
 
-Things that came up during planning but were not explicitly committed to during the grilling — flagged here rather than invented into the spec:
+**Resolved before Phase 1 (commits forthcoming):**
 
-- **Specific ship date for v0.1.** The pre-mortem countermeasure relies on telling 2 friends a specific date, but no calendar date was chosen during grilling. Pick one before Phase 1 starts.
-- **Which 2 friends to tell.** "2 of my friends buying cars in the next 12 months" was committed; the specific 2 were not named. Pick before Phase 1 starts.
-- **Weekly scope ritual cadence.** "Pre-committed scope per week" was committed; the exact day/time (e.g. Sunday evening) was not. Pick a ritual time.
-- **Where `ideas-for-later.md` lives.** Repo root is the natural default but was not explicitly committed during grilling.
+- **Ship date for v0.1:** Sunday, June 28, 2026. This is the date told to Homayoon and Khalid for accountability. If I miss it, I look at *why* before I touch any deferred-list ideas.
+- **Two friends to tell:** Homayoon and Khalid. They will get a test URL when v0.1 passes the 5-personal-deals test.
+- **Weekly scope ritual:** Every Sunday at 8 PM. I write down what I'll have done by the *next* Sunday. If I missed the prior week's commitment, I look at why before adjusting the new week's scope.
+- **`ideas-for-later.md` lives at repo root.** Already committed.
+
+**Still TBD (deliberately):**
+
+Things that came up during planning but were not explicitly committed to during the grilling — flagged here rather than invented into the spec:
 - **What "deal" looks like as input schema.** The free-text + chat shape is committed, but no formal field list was committed. Phase 2 system-prompt work will need to define what shape the model expects (e.g. price, fees, APR, term, trade-in, taxes) even if the user types it free-form.
 - **Whether Phase 5's "live URL shared with 2 friends" is a closed/invite-only link or just shared privately by URL.** Not discussed during grilling.
