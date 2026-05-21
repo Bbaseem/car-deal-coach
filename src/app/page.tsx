@@ -8,7 +8,8 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { WalkAwayGate } from '@/components/WalkAwayGate';
 import { useSession } from '@/hooks/useSession';
 import { SAMPLE_DEAL } from '@/lib/sampleDeal';
-import type { ChatRequest, ChatResponse, Round } from '@/lib/types';
+import { readNdjsonStream } from '@/lib/streamClient';
+import type { ChatRequest, Round, RoundProgress } from '@/lib/types';
 
 function makeRoundId() {
   return `round_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
@@ -22,11 +23,13 @@ export default function Home() {
   const { session, hydrated, setWalkAway, setComps, appendRound, updateRound, reset } =
     useSession();
   const [pendingRoundId, setPendingRoundId] = useState<string | null>(null);
+  const [pendingProgress, setPendingProgress] = useState<RoundProgress | null>(null);
   const [topLevelError, setTopLevelError] = useState<string>('');
 
   async function runRound(round: Round, priorRounds: Round[]) {
     setTopLevelError('');
     setPendingRoundId(round.id);
+    setPendingProgress({ status: 'Reading your offer…', linesSoFar: 0 });
     updateRound(round.id, { output: null, error: undefined });
     try {
       const body: ChatRequest = {
@@ -39,12 +42,32 @@ export default function Home() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
-      const data: ChatResponse = await res.json();
-      if (!data.ok) {
-        updateRound(round.id, { error: data.error });
-        setTopLevelError(data.error);
-      } else {
-        updateRound(round.id, { output: data.output, error: undefined });
+
+      let gotFinal = false;
+      let gotError: string | null = null;
+      await readNdjsonStream(res, (ev) => {
+        if (ev.type === 'status') {
+          setPendingProgress((p) => ({
+            status: ev.text,
+            linesSoFar: p?.linesSoFar ?? 0,
+          }));
+        } else if (ev.type === 'progress') {
+          setPendingProgress({
+            status: `Writing script line ${ev.linesSoFar}…`,
+            linesSoFar: ev.linesSoFar,
+          });
+        } else if (ev.type === 'final') {
+          gotFinal = true;
+          updateRound(round.id, { output: ev.output, error: undefined });
+        } else if (ev.type === 'error') {
+          gotError = ev.message;
+        }
+      });
+
+      if (!gotFinal) {
+        const msg = gotError ?? 'No response from server.';
+        updateRound(round.id, { error: msg });
+        setTopLevelError(msg);
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Request failed.';
@@ -52,6 +75,7 @@ export default function Home() {
       setTopLevelError(msg);
     } finally {
       setPendingRoundId(null);
+      setPendingProgress(null);
     }
   }
 
@@ -166,6 +190,7 @@ export default function Home() {
       <RoundHistory
         rounds={session.rounds}
         pendingRoundId={pendingRoundId}
+        pendingProgress={pendingProgress}
         onRegenerate={regenerate}
       />
 

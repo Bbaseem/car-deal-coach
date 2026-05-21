@@ -3,7 +3,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { getAnthropicClient, getModel } from '@/lib/anthropic';
 import { coachOutputSchema } from '@/lib/schema';
 import { SUBMIT_COACHING_TOOL, SYSTEM_PROMPT } from '@/lib/systemPrompt';
-import type { ChatRequest, ChatResponse, Round } from '@/lib/types';
+import type { ChatRequest, ChatStreamEvent, Round } from '@/lib/types';
 
 export const runtime = 'nodejs';
 
@@ -67,8 +67,38 @@ function buildPriorMessages(rounds: Round[]): Anthropic.MessageParam[] {
   return out;
 }
 
-function jsonResponse(body: ChatResponse, status = 200): Response {
-  return new Response(JSON.stringify(body), {
+function ndjsonResponse(): {
+  response: Response;
+  enqueue: (event: ChatStreamEvent) => void;
+  close: () => void;
+} {
+  const encoder = new TextEncoder();
+  let controllerRef: ReadableStreamDefaultController<Uint8Array> | null = null;
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      controllerRef = controller;
+    },
+  });
+  const enqueue = (event: ChatStreamEvent) => {
+    if (!controllerRef) return;
+    controllerRef.enqueue(encoder.encode(JSON.stringify(event) + '\n'));
+  };
+  const close = () => {
+    if (controllerRef) controllerRef.close();
+  };
+  const response = new Response(stream, {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/x-ndjson; charset=utf-8',
+      'Cache-Control': 'no-store',
+      'X-Content-Type-Options': 'nosniff',
+    },
+  });
+  return { response, enqueue, close };
+}
+
+function jsonError(message: string, status = 400): Response {
+  return new Response(JSON.stringify({ ok: false, error: message }), {
     status,
     headers: { 'Content-Type': 'application/json' },
   });
@@ -79,22 +109,21 @@ export async function POST(request: NextRequest): Promise<Response> {
   try {
     body = (await request.json()) as ChatRequest;
   } catch {
-    return jsonResponse({ ok: false, error: 'Invalid JSON body.' }, 400);
+    return jsonError('Invalid JSON body.', 400);
   }
 
   if (!body || typeof body.message !== 'string' || !body.message.trim()) {
-    return jsonResponse({ ok: false, error: 'Message is required.' }, 400);
+    return jsonError('Message is required.', 400);
   }
   if (!body.context || !Array.isArray(body.context.comps)) {
-    return jsonResponse({ ok: false, error: 'Context with comps[] is required.' }, 400);
+    return jsonError('Context with comps[] is required.', 400);
   }
 
   let client: Anthropic;
   try {
     client = getAnthropicClient();
   } catch (e) {
-    const msg = e instanceof Error ? e.message : 'Anthropic client unavailable.';
-    return jsonResponse({ ok: false, error: msg }, 500);
+    return jsonError(e instanceof Error ? e.message : 'Anthropic client unavailable.', 500);
   }
 
   const messages: Anthropic.MessageParam[] = [
@@ -102,45 +131,92 @@ export async function POST(request: NextRequest): Promise<Response> {
     { role: 'user', content: buildUserContent(body) },
   ];
 
-  try {
-    const response = await client.messages.create({
-      model: getModel(),
-      max_tokens: 2048,
-      system: [
-        {
-          type: 'text',
-          text: SYSTEM_PROMPT,
-          cache_control: { type: 'ephemeral' },
-        },
-      ],
-      tools: [SUBMIT_COACHING_TOOL],
-      tool_choice: { type: 'tool', name: SUBMIT_COACHING_TOOL.name },
-      messages,
-    });
+  const { response, enqueue, close } = ndjsonResponse();
+  const startedAt = Date.now();
 
-    const toolUse = response.content.find(
-      (block): block is Anthropic.ToolUseBlock => block.type === 'tool_use',
-    );
-    if (!toolUse) {
-      return jsonResponse(
-        { ok: false, error: 'Model did not return a structured coaching output.' },
-        502,
+  (async () => {
+    try {
+      enqueue({ type: 'status', text: 'Reading your offer…' });
+
+      const stream = client.messages.stream({
+        model: getModel(),
+        max_tokens: 2048,
+        system: [
+          {
+            type: 'text',
+            text: SYSTEM_PROMPT,
+            cache_control: { type: 'ephemeral' },
+          },
+        ],
+        tools: [SUBMIT_COACHING_TOOL],
+        tool_choice: { type: 'tool', name: SUBMIT_COACHING_TOOL.name },
+        messages,
+      });
+
+      let bytesSoFar = 0;
+      let linesSoFar = 0;
+      let announcedDrafting = false;
+
+      for await (const event of stream) {
+        if (event.type === 'content_block_delta' && event.delta.type === 'input_json_delta') {
+          const chunk = event.delta.partial_json;
+          bytesSoFar += chunk.length;
+          if (!announcedDrafting) {
+            announcedDrafting = true;
+            enqueue({ type: 'status', text: 'Drafting verdict and script…' });
+          }
+          const newLines = (chunk.match(/"line"\s*:/g) ?? []).length;
+          if (newLines > 0) {
+            linesSoFar += newLines;
+            enqueue({ type: 'progress', linesSoFar, bytesSoFar });
+          }
+        }
+      }
+
+      const final = await stream.finalMessage();
+      const toolUse = final.content.find(
+        (block): block is Anthropic.ToolUseBlock => block.type === 'tool_use',
       );
+      if (!toolUse) {
+        enqueue({
+          type: 'error',
+          message: 'Model did not return a structured coaching output.',
+        });
+        close();
+        return;
+      }
+      const parsed = coachOutputSchema.safeParse(toolUse.input);
+      if (!parsed.success) {
+        const first = parsed.error.issues[0];
+        const summary = first
+          ? `${first.path.join('.') || 'root'}: ${first.message}`
+          : 'unknown shape error';
+        enqueue({
+          type: 'error',
+          message: `Model output failed validation (${summary}). Try regenerating.`,
+        });
+        close();
+        return;
+      }
+
+      const usage = final.usage;
+      console.log('[chat]', {
+        model: getModel(),
+        durationMs: Date.now() - startedAt,
+        input_tokens: usage.input_tokens,
+        output_tokens: usage.output_tokens,
+        cache_creation_input_tokens: usage.cache_creation_input_tokens,
+        cache_read_input_tokens: usage.cache_read_input_tokens,
+      });
+
+      enqueue({ type: 'final', output: parsed.data });
+      close();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Anthropic request failed.';
+      enqueue({ type: 'error', message: msg });
+      close();
     }
-    const parsed = coachOutputSchema.safeParse(toolUse.input);
-    if (!parsed.success) {
-      const first = parsed.error.issues[0];
-      const summary = first
-        ? `${first.path.join('.') || 'root'}: ${first.message}`
-        : 'unknown shape error';
-      return jsonResponse(
-        { ok: false, error: `Model output failed validation (${summary}). Try regenerating.` },
-        502,
-      );
-    }
-    return jsonResponse({ ok: true, output: parsed.data });
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : 'Anthropic request failed.';
-    return jsonResponse({ ok: false, error: msg }, 502);
-  }
+  })();
+
+  return response;
 }

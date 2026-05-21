@@ -60,3 +60,14 @@ export type ChatRequest = {
 };
 
 export type ChatResponse = { ok: true; output: CoachOutput } | { ok: false; error: string };
+
+export type ChatStreamEvent =
+  | { type: 'status'; text: string }
+  | { type: 'progress'; linesSoFar: number; bytesSoFar: number }
+  | { type: 'final'; output: CoachOutput }
+  | { type: 'error'; message: string };
+
+export type RoundProgress = {
+  status: string;
+  linesSoFar: number;
+};

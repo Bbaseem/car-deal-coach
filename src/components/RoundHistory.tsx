@@ -1,12 +1,13 @@
 'use client';
 
-import type { Round } from '@/lib/types';
+import type { Round, RoundProgress } from '@/lib/types';
 import { CopyButton } from './CopyButton';
 import { OutputCard } from './OutputCard';
 
 type Props = {
   rounds: Round[];
   pendingRoundId?: string | null;
+  pendingProgress?: RoundProgress | null;
   onRegenerate?: (round: Round) => void;
 };
 
@@ -20,7 +21,7 @@ function fullScriptText(round: Round): string {
   return [round.output.verdict.headline, '', ...lines].join('\n');
 }
 
-export function RoundHistory({ rounds, pendingRoundId, onRegenerate }: Props) {
+export function RoundHistory({ rounds, pendingRoundId, pendingProgress, onRegenerate }: Props) {
   if (rounds.length === 0) return null;
   return (
     <div className="flex flex-col gap-8" aria-live="polite">
@@ -36,7 +37,7 @@ export function RoundHistory({ rounds, pendingRoundId, onRegenerate }: Props) {
                 <span>{formatTime(r.createdAt)}</span>
                 {isPending && (
                   <span className="text-blue-700 dark:text-blue-300 normal-case font-medium">
-                    Thinking…
+                    {pendingProgress?.status ?? 'Thinking…'}
                   </span>
                 )}
               </div>
