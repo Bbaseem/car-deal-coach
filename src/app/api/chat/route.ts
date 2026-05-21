@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { getAnthropicClient, getModel } from '@/lib/anthropic';
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 import { coachOutputSchema } from '@/lib/schema';
 import { SUBMIT_COACHING_TOOL, SYSTEM_PROMPT } from '@/lib/systemPrompt';
 import type { ChatRequest, ChatStreamEvent, Round } from '@/lib/types';
@@ -117,6 +118,25 @@ export async function POST(request: NextRequest): Promise<Response> {
   }
   if (!body.context || !Array.isArray(body.context.comps)) {
     return jsonError('Context with comps[] is required.', 400);
+  }
+
+  const ip = getClientIp(request.headers);
+  const rl = await checkRateLimit(ip);
+  if (!rl.ok) {
+    const minutesToReset = Math.max(1, Math.ceil((rl.reset - Date.now()) / 60000));
+    return new Response(
+      JSON.stringify({
+        ok: false,
+        error: `Rate limit hit (${minutesToReset} min until reset). Try again in a few minutes.`,
+      }),
+      {
+        status: 429,
+        headers: {
+          'Content-Type': 'application/json',
+          'Retry-After': String((Math.max(60, rl.reset - Date.now()) / 1000) | 0),
+        },
+      },
+    );
   }
 
   let client: Anthropic;
