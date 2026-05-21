@@ -30,7 +30,8 @@ export function CompsInput({ comps, onChange, hasRounds = false }: Props) {
         <div>
           <div className="font-medium">Comparable listings ({comps.length}/5)</div>
           <div className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
-            Paste 3–5 listings from Cars.com, AutoTrader, or CarGurus. Include price, miles, trim, location if you can.
+            Paste 3–5 listings from Cars.com, AutoTrader, or CarGurus. Include price, miles, trim,
+            location if you can.
             {hasRounds && ' Changes apply to your next round, not past rounds.'}
           </div>
         </div>
@@ -45,13 +46,17 @@ export function CompsInput({ comps, onChange, hasRounds = false }: Props) {
       </div>
       {comps.length === 0 ? (
         <div className="rounded border border-dashed border-gray-300 dark:border-gray-700 p-3 text-sm text-gray-600 dark:text-gray-400">
-          No comps yet. The app will run in <strong>low-confidence mode</strong> and coach you to stall and paste comps before generating a final script.
+          No comps yet. The app will run in <strong>low-confidence mode</strong> and coach you to
+          stall and paste comps before generating a final script.
         </div>
       ) : (
         comps.map((c, i) => (
           <div key={c.id} className="flex flex-col gap-1">
             <div className="flex items-center justify-between">
-              <label htmlFor={`comp-${c.id}`} className="text-xs uppercase tracking-wide text-gray-600 dark:text-gray-400 font-medium">
+              <label
+                htmlFor={`comp-${c.id}`}
+                className="text-xs uppercase tracking-wide text-gray-600 dark:text-gray-400 font-medium"
+              >
                 Comp #{i + 1}
               </label>
               <button
@@ -67,7 +72,9 @@ export function CompsInput({ comps, onChange, hasRounds = false }: Props) {
               id={`comp-${c.id}`}
               value={c.text}
               onChange={(e) => updateText(c.id, e.target.value)}
-              placeholder={'e.g. "2022 Honda Odyssey EX-L, 28k mi, $34,500, dealer in Pleasanton CA"'}
+              placeholder={
+                'e.g. "2022 Honda Odyssey EX-L, 28k mi, $34,500, dealer in Pleasanton CA"'
+              }
               rows={2}
               className="w-full border rounded p-2 text-base bg-white dark:bg-black/30 border-gray-300 dark:border-gray-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500"
             />

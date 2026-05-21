@@ -58,7 +58,11 @@ export function DealInput({ disabled, onSubmit }: Props) {
       />
       <div className="flex items-center justify-between gap-3">
         <p className="text-xs text-gray-500 dark:text-gray-500 hidden sm:block">
-          Press <kbd className="px-1.5 py-0.5 rounded border border-gray-300 dark:border-gray-700 text-xs">⌘ Enter</kbd> to submit
+          Press{' '}
+          <kbd className="px-1.5 py-0.5 rounded border border-gray-300 dark:border-gray-700 text-xs">
+            ⌘ Enter
+          </kbd>{' '}
+          to submit
         </p>
         <button
           type="submit"

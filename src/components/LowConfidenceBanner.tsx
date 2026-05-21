@@ -18,9 +18,7 @@ export function LowConfidenceBanner({ reason, coaching }: Props) {
           No comps pasted — this output is LLM-only.
         </span>
       </div>
-      {reason && (
-        <p className="text-sm text-red-900 dark:text-red-200">{reason}</p>
-      )}
+      {reason && <p className="text-sm text-red-900 dark:text-red-200">{reason}</p>}
       {coaching && (
         <div className="flex flex-col gap-2 mt-1">
           <div>

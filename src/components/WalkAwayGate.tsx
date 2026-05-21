@@ -34,9 +34,7 @@ export function WalkAwayGate({ value, onChange, editNote = false }: Props) {
             <div className="text-xs uppercase tracking-wide text-emerald-800 dark:text-emerald-300 font-medium">
               Your walk-away OTD
             </div>
-            <div className="text-2xl font-semibold tabular-nums">
-              ${value.toLocaleString()}
-            </div>
+            <div className="text-2xl font-semibold tabular-nums">${value.toLocaleString()}</div>
             <div className="text-xs text-emerald-900/70 dark:text-emerald-200/70 mt-1">
               The script will anchor this as your own number.
               {editNote && ' Changes apply to your next round, not past rounds.'}
@@ -59,12 +57,15 @@ export function WalkAwayGate({ value, onChange, editNote = false }: Props) {
       <label htmlFor="walk-away-input" className="text-sm font-medium">
         Walk-away OTD ceiling
         <span className="block text-xs font-normal text-amber-900/70 dark:text-amber-200/70 mt-0.5">
-          The total out-the-door price above which you walk away. Set this before generating a script.
+          The total out-the-door price above which you walk away. Set this before generating a
+          script.
         </span>
       </label>
       <div className="flex gap-2">
         <div className="relative flex-1">
-          <span className="absolute inset-y-0 left-3 flex items-center text-base text-gray-500">$</span>
+          <span className="absolute inset-y-0 left-3 flex items-center text-base text-gray-500">
+            $
+          </span>
           <input
             id="walk-away-input"
             type="text"

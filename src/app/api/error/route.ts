@@ -15,10 +15,14 @@ export async function POST(request: NextRequest): Promise<Response> {
   try {
     body = (await request.json()) as ClientError;
   } catch {
-    return new Response('{"ok":false}', { status: 400, headers: { 'Content-Type': 'application/json' } });
+    return new Response('{"ok":false}', {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
-  const ip = request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip') ?? 'unknown';
+  const ip =
+    request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip') ?? 'unknown';
   console.error('[client-error]', {
     ts: new Date().toISOString(),
     ip,
@@ -29,5 +33,8 @@ export async function POST(request: NextRequest): Promise<Response> {
     stack: body.stack?.slice(0, 2000),
   });
 
-  return new Response('{"ok":true}', { status: 200, headers: { 'Content-Type': 'application/json' } });
+  return new Response('{"ok":true}', {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  });
 }

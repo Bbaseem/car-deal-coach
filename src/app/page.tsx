@@ -19,15 +19,8 @@ function makeCompId() {
 }
 
 export default function Home() {
-  const {
-    session,
-    hydrated,
-    setWalkAway,
-    setComps,
-    appendRound,
-    updateRound,
-    reset,
-  } = useSession();
+  const { session, hydrated, setWalkAway, setComps, appendRound, updateRound, reset } =
+    useSession();
   const [pendingRoundId, setPendingRoundId] = useState<string | null>(null);
   const [topLevelError, setTopLevelError] = useState<string>('');
 
@@ -82,9 +75,7 @@ export default function Home() {
   async function regenerate(target: Round) {
     const idx = session.rounds.findIndex((r) => r.id === target.id);
     if (idx < 0) return;
-    const priorRounds = session.rounds
-      .slice(0, idx)
-      .filter((r) => r.output != null);
+    const priorRounds = session.rounds.slice(0, idx).filter((r) => r.output != null);
     await runRound(target, priorRounds);
   }
 
@@ -111,7 +102,8 @@ export default function Home() {
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Car Deal Coach</h1>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            Paste a dealer offer. Get a hedged counter-offer script with per-line reasoning you can read out loud.
+            Paste a dealer offer. Get a hedged counter-offer script with per-line reasoning you can
+            read out loud.
           </p>
         </div>
         <div className="flex flex-col items-end gap-2 shrink-0">

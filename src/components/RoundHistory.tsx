@@ -41,9 +41,7 @@ export function RoundHistory({ rounds, pendingRoundId, onRegenerate }: Props) {
                 )}
               </div>
               <div className="flex items-center gap-2">
-                {r.output && (
-                  <CopyButton text={fullScriptText(r)} label="Copy script" />
-                )}
+                {r.output && <CopyButton text={fullScriptText(r)} label="Copy script" />}
                 {onRegenerate && !isPending && (r.output || r.error) && (
                   <button
                     type="button"

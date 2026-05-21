@@ -59,6 +59,4 @@ export type ChatRequest = {
   priorRounds: Round[];
 };
 
-export type ChatResponse =
-  | { ok: true; output: CoachOutput }
-  | { ok: false; error: string };
+export type ChatResponse = { ok: true; output: CoachOutput } | { ok: false; error: string };

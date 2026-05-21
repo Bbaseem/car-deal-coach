@@ -39,9 +39,7 @@ export function OutputCard({ output }: Props) {
             Counter-offer script &mdash; read out loud
           </div>
           <CopyButton
-            text={output.scriptLines
-              .map((s, i) => `${i + 1}. ${s.line}`)
-              .join('\n\n')}
+            text={output.scriptLines.map((s, i) => `${i + 1}. ${s.line}`).join('\n\n')}
             label="Copy all"
           />
         </div>
@@ -55,9 +53,7 @@ export function OutputCard({ output }: Props) {
                 <span className="font-bold text-gray-500 dark:text-gray-400 tabular-nums shrink-0 pt-0.5">
                   {i + 1}.
                 </span>
-                <span className="text-base leading-relaxed flex-1">
-                  &ldquo;{s.line}&rdquo;
-                </span>
+                <span className="text-base leading-relaxed flex-1">&ldquo;{s.line}&rdquo;</span>
                 <CopyButton text={s.line} label="Copy" className="shrink-0" />
               </div>
               <div className="text-sm text-gray-700 dark:text-gray-400 md:border-l md:border-gray-200 md:dark:border-gray-800 md:pl-4">
