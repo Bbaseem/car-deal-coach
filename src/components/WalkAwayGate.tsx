@@ -5,9 +5,10 @@ import { useState } from 'react';
 type Props = {
   value: number | null;
   onChange: (value: number | null) => void;
+  editNote?: boolean;
 };
 
-export function WalkAwayGate({ value, onChange }: Props) {
+export function WalkAwayGate({ value, onChange, editNote = false }: Props) {
   const [draft, setDraft] = useState<string>(value != null ? String(value) : '');
   const [editing, setEditing] = useState<boolean>(value == null);
 
@@ -38,12 +39,13 @@ export function WalkAwayGate({ value, onChange }: Props) {
             </div>
             <div className="text-xs text-emerald-900/70 dark:text-emerald-200/70 mt-1">
               The script will anchor this as your own number.
+              {editNote && ' Changes apply to your next round, not past rounds.'}
             </div>
           </div>
           <button
             type="button"
             onClick={() => setEditing(true)}
-            className="text-sm underline text-emerald-900 dark:text-emerald-200"
+            className="text-sm underline text-emerald-900 dark:text-emerald-200 min-h-[44px] min-w-[44px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500"
           >
             Edit
           </button>
@@ -54,7 +56,7 @@ export function WalkAwayGate({ value, onChange }: Props) {
 
   return (
     <section className="rounded-lg border border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/30 p-4 flex flex-col gap-2">
-      <label className="text-sm font-medium">
+      <label htmlFor="walk-away-input" className="text-sm font-medium">
         Walk-away OTD ceiling
         <span className="block text-xs font-normal text-amber-900/70 dark:text-amber-200/70 mt-0.5">
           The total out-the-door price above which you walk away. Set this before generating a script.
@@ -64,6 +66,7 @@ export function WalkAwayGate({ value, onChange }: Props) {
         <div className="relative flex-1">
           <span className="absolute inset-y-0 left-3 flex items-center text-base text-gray-500">$</span>
           <input
+            id="walk-away-input"
             type="text"
             inputMode="decimal"
             value={draft}
@@ -76,13 +79,13 @@ export function WalkAwayGate({ value, onChange }: Props) {
               }
             }}
             placeholder="42000"
-            className="w-full pl-7 pr-3 py-2 border rounded bg-white dark:bg-black/30 border-gray-300 dark:border-gray-700"
+            className="w-full pl-7 pr-3 py-2 border rounded bg-white dark:bg-black/30 border-gray-300 dark:border-gray-700 text-base focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500"
           />
         </div>
         <button
           type="button"
           onClick={commit}
-          className="px-4 py-2 rounded bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium"
+          className="px-4 py-2 rounded bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium min-h-[44px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500"
         >
           Save
         </button>
