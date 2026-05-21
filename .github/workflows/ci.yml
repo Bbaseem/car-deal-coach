@@ -32,4 +32,4 @@ jobs:
           ANTHROPIC_API_KEY: test-build-key-not-real
 
       - name: Unit tests
-        run: npm test -- --run
+        run: npm test
