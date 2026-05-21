@@ -32,15 +32,18 @@ This creates `.vercel/` (already in `.gitignore`). Then run `vercel env pull .en
 
 Set in Vercel dashboard → Project → **Settings → Environment Variables**. Tag each for **Production**, **Preview**, and **Development** unless noted otherwise.
 
-| Name                       | Required | Value                                    | Notes |
-| -------------------------- | -------- | ---------------------------------------- | ----- |
-| `ANTHROPIC_API_KEY`        | **Yes**  | `sk-ant-...`                             | From https://console.anthropic.com/settings/keys. Server-only. |
-| `ANTHROPIC_MODEL`          | No       | `claude-sonnet-4-5`                      | Override default model if needed. |
-| `NEXT_PUBLIC_SITE_URL`     | Yes      | `https://<your-project>.vercel.app`      | Used by `metadataBase` for absolute OG/Twitter URLs. Must be set or social previews break. |
-| `UPSTASH_REDIS_REST_URL`   | No       | `https://...upstash.io`                  | Enables `/api/chat` rate limiting. Without it the limiter no-ops. |
-| `UPSTASH_REDIS_REST_TOKEN` | No       | `...`                                    | Pair with the URL above. |
+| Name                       | Required             | Value                                    | Notes |
+| -------------------------- | -------------------- | ---------------------------------------- | ----- |
+| `LLM_PROVIDER`             | No                   | `anthropic` \| `openai` \| `auto`        | Which LLM the `/api/chat` route uses. Unset/`auto` prefers Anthropic if its key is set, else OpenAI. |
+| `ANTHROPIC_API_KEY`        | **One of these two** | `sk-ant-...`                             | From https://console.anthropic.com/settings/keys. |
+| `OPENAI_API_KEY`           | **One of these two** | `sk-...`                                 | From https://platform.openai.com/api-keys. |
+| `ANTHROPIC_MODEL`          | No                   | `claude-sonnet-4-5`                      | Override the default Anthropic model. |
+| `OPENAI_MODEL`             | No                   | `gpt-4o-2024-08-06`                      | Override the default OpenAI model. Must support function-calling + streaming. |
+| `NEXT_PUBLIC_SITE_URL`     | Yes                  | `https://<your-project>.vercel.app`      | Used by `metadataBase` for absolute OG/Twitter URLs. Must be set or social previews break. |
+| `UPSTASH_REDIS_REST_URL`   | No                   | `https://...upstash.io`                  | Enables `/api/chat` rate limiting. Without it the limiter no-ops. |
+| `UPSTASH_REDIS_REST_TOKEN` | No                   | `...`                                    | Pair with the URL above. |
 
-> **Anthropic billing.** Claude Max does **not** cover deployed-app API calls — those bill against your Anthropic API account separately. PLAN.md caps v0.1 testing at $30/month; overrun is the signal to add caching, not raise the cap.
+> **Billing.** Both Anthropic and OpenAI bill deployed-app API calls separately from any chat-product subscription (Claude Max, ChatGPT Plus). PLAN.md caps v0.1 testing at $30/month total across whichever provider is active; overrun is the signal to add caching or pick a cheaper model, not raise the cap.
 
 ---
 

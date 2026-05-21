@@ -30,7 +30,7 @@ This is a **build-to-learn** project: the goal is to walk the full lifecycle of 
 
 - **Framework:** Next.js 16 (App Router, Turbopack) + React 19 + TypeScript (strict)
 - **Styling:** Tailwind CSS v4 with class-based light/dark/auto theme
-- **LLM:** Claude Sonnet via the Anthropic SDK, structured output via forced `tool_use`, NDJSON streaming with live progress
+- **LLM:** Pluggable provider — **Anthropic Claude** or **OpenAI GPT** — selected by `LLM_PROVIDER` env (auto-detect from whichever key is set). Structured output via forced `tool_use` / function calling, NDJSON streaming with live progress.
 - **Validation:** Zod schema on every model response
 - **Storage:** Browser `localStorage` only (no DB, no accounts, no server-side state in v0.1)
 - **Optional rate limit:** Upstash Redis sliding-window (no-op when env unset)
@@ -42,9 +42,11 @@ This is a **build-to-learn** project: the goal is to walk the full lifecycle of 
 # 1. clone + install
 npm install
 
-# 2. add your Anthropic API key (server-only)
+# 2. add ONE provider key (server-only): Anthropic OR OpenAI
 cp .env.local.example .env.local
-# edit .env.local and paste a key from https://console.anthropic.com/settings/keys
+# edit .env.local — set ANTHROPIC_API_KEY (https://console.anthropic.com/settings/keys)
+# or set OPENAI_API_KEY (https://platform.openai.com/api-keys). You can set both
+# and pick which one to use with LLM_PROVIDER=openai|anthropic|auto.
 
 # 3. dev
 npm run dev   # http://localhost:3000

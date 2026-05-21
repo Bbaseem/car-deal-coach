@@ -1,7 +1,8 @@
 import type { NextRequest } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
-import { getAnthropicClient, getModel } from '@/lib/anthropic';
 import { buildUserContent } from '@/lib/buildPrompt';
+import { getProvider } from '@/lib/llm/provider';
+import type { PriorRound } from '@/lib/llm/types';
+import { ProviderConfigError } from '@/lib/llm/types';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 import { coachOutputSchema } from '@/lib/schema';
 import { SUBMIT_COACHING_TOOL, SYSTEM_PROMPT } from '@/lib/systemPrompt';
@@ -9,42 +10,24 @@ import type { ChatRequest, ChatStreamEvent, Round } from '@/lib/types';
 
 export const runtime = 'nodejs';
 
-function buildPriorMessages(rounds: Round[]): Anthropic.MessageParam[] {
-  const out: Anthropic.MessageParam[] = [];
-  for (const r of rounds) {
-    out.push({
-      role: 'user',
-      content: buildUserContent({
+const TOOL = {
+  name: SUBMIT_COACHING_TOOL.name,
+  description: SUBMIT_COACHING_TOOL.description,
+  inputSchema: SUBMIT_COACHING_TOOL.input_schema as Record<string, unknown>,
+};
+
+function toPriorRounds(rounds: Round[]): PriorRound[] {
+  return rounds
+    .filter((r) => r.output != null)
+    .map((r) => ({
+      id: r.id,
+      userMessage: buildUserContent({
         message: r.userMessage,
         context: r.context,
         priorRounds: [],
       }),
-    });
-    if (r.output) {
-      out.push({
-        role: 'assistant',
-        content: [
-          {
-            type: 'tool_use',
-            id: `prior_${r.id}`,
-            name: SUBMIT_COACHING_TOOL.name,
-            input: r.output as unknown as Record<string, unknown>,
-          },
-        ],
-      });
-      out.push({
-        role: 'user',
-        content: [
-          {
-            type: 'tool_result',
-            tool_use_id: `prior_${r.id}`,
-            content: 'ok',
-          },
-        ],
-      });
-    }
-  }
-  return out;
+      toolInput: r.output as unknown,
+    }));
 }
 
 function ndjsonResponse(): {
@@ -118,17 +101,19 @@ export async function POST(request: NextRequest): Promise<Response> {
     );
   }
 
-  let client: Anthropic;
-  try {
-    client = getAnthropicClient();
-  } catch (e) {
-    return jsonError(e instanceof Error ? e.message : 'Anthropic client unavailable.', 500);
+  const provider = (() => {
+    try {
+      return { ok: true as const, value: getProvider() };
+    } catch (e) {
+      return { ok: false as const, error: e };
+    }
+  })();
+  if (!provider.ok) {
+    const status = provider.error instanceof ProviderConfigError ? 500 : 502;
+    const msg =
+      provider.error instanceof Error ? provider.error.message : 'LLM provider unavailable.';
+    return jsonError(msg, status);
   }
-
-  const messages: Anthropic.MessageParam[] = [
-    ...buildPriorMessages(body.priorRounds ?? []),
-    { role: 'user', content: buildUserContent(body) },
-  ];
 
   const { response, enqueue, close } = ndjsonResponse();
   const startedAt = Date.now();
@@ -137,54 +122,17 @@ export async function POST(request: NextRequest): Promise<Response> {
     try {
       enqueue({ type: 'status', text: 'Reading your offer…' });
 
-      const stream = client.messages.stream({
-        model: getModel(),
-        max_tokens: 2048,
-        system: [
-          {
-            type: 'text',
-            text: SYSTEM_PROMPT,
-            cache_control: { type: 'ephemeral' },
-          },
-        ],
-        tools: [SUBMIT_COACHING_TOOL],
-        tool_choice: { type: 'tool', name: SUBMIT_COACHING_TOOL.name },
-        messages,
+      const result = await provider.value.stream({
+        systemPrompt: SYSTEM_PROMPT,
+        tool: TOOL,
+        userMessage: buildUserContent(body),
+        priorRounds: toPriorRounds(body.priorRounds ?? []),
+        onStatus: (text) => enqueue({ type: 'status', text }),
+        onProgress: (linesSoFar, bytesSoFar) =>
+          enqueue({ type: 'progress', linesSoFar, bytesSoFar }),
       });
 
-      let bytesSoFar = 0;
-      let linesSoFar = 0;
-      let announcedDrafting = false;
-
-      for await (const event of stream) {
-        if (event.type === 'content_block_delta' && event.delta.type === 'input_json_delta') {
-          const chunk = event.delta.partial_json;
-          bytesSoFar += chunk.length;
-          if (!announcedDrafting) {
-            announcedDrafting = true;
-            enqueue({ type: 'status', text: 'Drafting verdict and script…' });
-          }
-          const newLines = (chunk.match(/"line"\s*:/g) ?? []).length;
-          if (newLines > 0) {
-            linesSoFar += newLines;
-            enqueue({ type: 'progress', linesSoFar, bytesSoFar });
-          }
-        }
-      }
-
-      const final = await stream.finalMessage();
-      const toolUse = final.content.find(
-        (block): block is Anthropic.ToolUseBlock => block.type === 'tool_use',
-      );
-      if (!toolUse) {
-        enqueue({
-          type: 'error',
-          message: 'Model did not return a structured coaching output.',
-        });
-        close();
-        return;
-      }
-      const parsed = coachOutputSchema.safeParse(toolUse.input);
+      const parsed = coachOutputSchema.safeParse(result.rawToolInput);
       if (!parsed.success) {
         const first = parsed.error.issues[0];
         const summary = first
@@ -198,20 +146,20 @@ export async function POST(request: NextRequest): Promise<Response> {
         return;
       }
 
-      const usage = final.usage;
       console.log('[chat]', {
-        model: getModel(),
+        provider: provider.value.name,
+        model: provider.value.model,
         durationMs: Date.now() - startedAt,
-        input_tokens: usage.input_tokens,
-        output_tokens: usage.output_tokens,
-        cache_creation_input_tokens: usage.cache_creation_input_tokens,
-        cache_read_input_tokens: usage.cache_read_input_tokens,
+        input_tokens: result.usage.input_tokens,
+        output_tokens: result.usage.output_tokens,
+        cache_creation_input_tokens: result.usage.cache_creation_input_tokens,
+        cache_read_input_tokens: result.usage.cache_read_input_tokens,
       });
 
       enqueue({ type: 'final', output: parsed.data });
       close();
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Anthropic request failed.';
+      const msg = e instanceof Error ? e.message : 'LLM request failed.';
       enqueue({ type: 'error', message: msg });
       close();
     }
