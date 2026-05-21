@@ -45,7 +45,11 @@ export const SUBMIT_COACHING_TOOL = {
       verdict: {
         type: 'object',
         properties: {
-          headline: { type: 'string', description: 'One short line, e.g. "Verdict: deal is ~8% above target. Push to $XX,XXX OTD."' },
+          headline: {
+            type: 'string',
+            description:
+              'One short line, e.g. "Verdict: deal is ~8% above target. Push to $XX,XXX OTD."',
+          },
           summary: { type: 'string', description: 'One or two sentences explaining the headline.' },
         },
         required: ['headline', 'summary'],
@@ -60,7 +64,7 @@ export const SUBMIT_COACHING_TOOL = {
       },
       walkAwayAnchor: {
         type: 'string',
-        description: 'The buyer\'s walk-away OTD restated as theirs. Empty string if not set.',
+        description: "The buyer's walk-away OTD restated as theirs. Empty string if not set.",
       },
       scriptLines: {
         type: 'array',
@@ -69,14 +73,18 @@ export const SUBMIT_COACHING_TOOL = {
           type: 'object',
           properties: {
             line: { type: 'string', description: 'The line the buyer reads out loud.' },
-            reasoning: { type: 'string', description: 'One-sentence reasoning, tied to a pasted comp or a hedged norm.' },
+            reasoning: {
+              type: 'string',
+              description: 'One-sentence reasoning, tied to a pasted comp or a hedged norm.',
+            },
           },
           required: ['line', 'reasoning'],
         },
       },
       manipulationCallouts: {
         type: 'array',
-        description: 'Zero or more dealer-side patterns visible in this offer. Empty array if none apply.',
+        description:
+          'Zero or more dealer-side patterns visible in this offer. Empty array if none apply.',
         items: {
           type: 'object',
           properties: {

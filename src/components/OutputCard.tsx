@@ -1,6 +1,7 @@
 'use client';
 
 import type { CoachOutput } from '@/lib/types';
+import { CopyButton } from './CopyButton';
 import { LowConfidenceBanner } from './LowConfidenceBanner';
 
 type Props = {
@@ -18,8 +19,11 @@ export function OutputCard({ output }: Props) {
       )}
 
       <section className="rounded-lg border-2 border-blue-500 bg-blue-50 dark:bg-blue-950/30 p-4">
-        <div className="text-xs uppercase tracking-wide font-bold text-blue-700 dark:text-blue-300 mb-1">
-          Verdict
+        <div className="flex items-start justify-between gap-3">
+          <div className="text-xs uppercase tracking-wide font-bold text-blue-700 dark:text-blue-300 mb-1">
+            Verdict
+          </div>
+          <CopyButton text={output.verdict.headline} label="Copy" />
         </div>
         <div className="text-lg font-semibold text-blue-950 dark:text-blue-100">
           {output.verdict.headline}
@@ -30,10 +34,14 @@ export function OutputCard({ output }: Props) {
       </section>
 
       <section className="rounded-lg border border-gray-300 dark:border-gray-700 overflow-hidden">
-        <div className="px-4 py-2 bg-gray-100 dark:bg-gray-900 border-b border-gray-300 dark:border-gray-700">
+        <div className="px-4 py-2 bg-gray-100 dark:bg-gray-900 border-b border-gray-300 dark:border-gray-700 flex items-center justify-between gap-3">
           <div className="text-xs uppercase tracking-wide font-bold">
             Counter-offer script &mdash; read out loud
           </div>
+          <CopyButton
+            text={output.scriptLines.map((s, i) => `${i + 1}. ${s.line}`).join('\n\n')}
+            label="Copy all"
+          />
         </div>
         <ol className="flex flex-col">
           {output.scriptLines.map((s, i) => (
@@ -41,11 +49,12 @@ export function OutputCard({ output }: Props) {
               key={i}
               className="px-4 py-3 border-b border-gray-200 dark:border-gray-800 last:border-b-0 grid grid-cols-1 md:grid-cols-[1fr_1fr] gap-2 md:gap-4"
             >
-              <div className="flex gap-2">
-                <span className="font-bold text-gray-500 dark:text-gray-400 tabular-nums">
+              <div className="flex items-start gap-2">
+                <span className="font-bold text-gray-500 dark:text-gray-400 tabular-nums shrink-0 pt-0.5">
                   {i + 1}.
                 </span>
-                <span className="text-base leading-relaxed">&ldquo;{s.line}&rdquo;</span>
+                <span className="text-base leading-relaxed flex-1">&ldquo;{s.line}&rdquo;</span>
+                <CopyButton text={s.line} label="Copy" className="shrink-0" />
               </div>
               <div className="text-sm text-gray-700 dark:text-gray-400 md:border-l md:border-gray-200 md:dark:border-gray-800 md:pl-4">
                 <span className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-500 font-medium block">
@@ -60,8 +69,11 @@ export function OutputCard({ output }: Props) {
 
       {output.walkAwayAnchor && (
         <section className="rounded-lg border border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 p-3">
-          <div className="text-xs uppercase tracking-wide font-bold text-emerald-800 dark:text-emerald-300 mb-1">
-            Your walk-away line
+          <div className="flex items-start justify-between gap-3">
+            <div className="text-xs uppercase tracking-wide font-bold text-emerald-800 dark:text-emerald-300 mb-1">
+              Your walk-away line
+            </div>
+            <CopyButton text={output.walkAwayAnchor} label="Copy" />
           </div>
           <p className="text-sm italic">&ldquo;{output.walkAwayAnchor}&rdquo;</p>
         </section>
