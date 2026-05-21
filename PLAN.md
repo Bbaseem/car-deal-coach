@@ -69,40 +69,45 @@ Car-Deal-Coach is a free-text + chat web app that helps a first-time car buyer e
 
 Phase 1 must be the smallest thing that runs. Phase 5 must be the 5-personal-deals test + Vercel deploy.
 
-### Phase 1 — Smallest thing that runs
+### Phase 1 — Smallest thing that runs ✅ DONE (local, not yet deployed)
 
 - **Goal:** A deployed Next.js + TypeScript app on Vercel that takes a typed message and returns a Claude Sonnet response.
 - **What gets built:** Scaffold a Next.js + TS project. One chat input. One serverless API route calling Anthropic API with Claude Sonnet. Hardcoded placeholder system prompt. Connect repo to Vercel; first push lives at a real URL.
 - **Definition of done:** I can open the live Vercel URL on my phone, type "hello", and see a Claude Sonnet reply.
 - **Commits:** scaffold project; add chat input; add API route; wire to Anthropic API; deploy to Vercel.
+- **Status (2026-05-21):** Scaffold + chat input + `/api/chat` route + Anthropic wiring all landed (`ea4c4fa`, `64de78a`, merge `15b5e22`). Vercel deploy still pending — handled in Phase 5.
 
-### Phase 2 — Real system prompt + script output shape
+### Phase 2 — Real system prompt + script output shape ✅ DONE
 
 - **Goal:** Output is in the actual product format: verdict card + counter-offer script + per-line reasoning.
 - **What gets built:** Write the system prompt enforcing hedged coach voice, "never invent facts," verdict-card-then-script-then-reasoning structure, and specific-true comp-anchored phrasing. Render structured output in the chat UI.
 - **Definition of done:** I paste a real Honda Odyssey-style deal + 3 comps; output comes back in the verdict + script + reasoning shape with hedged language.
 - **Commits:** add system prompt; add output renderer; iterate prompt against 1–2 sample deals.
+- **Status (2026-05-21):** Hedged system prompt + forced `tool_use` schema in `src/lib/systemPrompt.ts`; structured output rendered by `OutputCard.tsx`; zod schema validation on every response (`src/lib/schema.ts`). Live iteration against real deals still owed in Phase 5.
 
-### Phase 3 — Inputs that match the product spec
+### Phase 3 — Inputs that match the product spec ✅ DONE
 
 - **Goal:** The walk-away pre-commit gate, the comps paste flow, and the no-comps fallback all work.
 - **What gets built:** Pre-script walk-away OTD input gate (anchored into output). Comps paste field accepting 3–5 listings. No-comps path: app coaches stall + shows pre-filled search URLs for Cars.com / AutoTrader / CarGurus. LLM-only fallback with prominent low-confidence warning at top of output.
 - **Definition of done:** All three flows reachable from the UI; walk-away number appears anchored in the script; low-confidence warning is unmistakable in the LLM-only path.
 - **Commits:** walk-away gate; comps field; no-comps URL hints; LLM-only warning banner.
+- **Status (2026-05-21):** `WalkAwayGate.tsx`, `CompsInput.tsx` (0–5 cap), `LowConfidenceBanner.tsx` with stall script + search URLs all in place. Zod refine rule enforces `noCompsCoaching` iff `lowConfidence` is true.
 
-### Phase 4 — Multi-round session memory + dealer-pattern callouts
+### Phase 4 — Multi-round session memory + dealer-pattern callouts ✅ DONE
 
 - **Goal:** Buyer can paste follow-up dealer counters across breaks; app remembers prior context within the tab. App calls out dealer-side manipulation patterns when relevant.
 - **What gets built:** LocalStorage cross-round memory of prior offer and prior recommendation. Prompt additions for surfacing four-square, monthly-payment shuffle, and similar tactics when the dealer offer matches the pattern.
 - **Definition of done:** I can do a 3-round simulated negotiation on my phone, close the tab, reopen it, and the session resumes. Pattern callouts fire on at least one constructed dealer offer.
 - **Commits:** localStorage round memory; restore on reload; pattern callout prompt rules.
+- **Status (2026-05-21):** `useSession` hook + `src/lib/storage.ts` persist rounds to `car-deal-coach:session:v1` and restore on hydration. Prior rounds replayed as Anthropic message history. Pattern callouts emitted via the `manipulationCallouts` field, rendered in `OutputCard.tsx`. Tab-reopen resume verified via Vitest round-trip test.
 
-### Phase 5 — 5-personal-deals test + ship
+### Phase 5 — 5-personal-deals test + ship 🟡 IN PROGRESS
 
 - **Goal:** Run the hard kill criterion. Deploy publicly to the friends.
 - **What gets built:** Test the app against 5 deals I already know the right answer for (my own past deals + 2–3 friends' deals). Look for any single recommendation that would have cost the buyer >$1,000 or insulted the dealer badly enough to kill the deal. If any one event fires, strip LLM-only mode and make comps mandatory before continuing.
 - **Definition of done:** All 5 test deals produce recommendations that pass the >$1,000 / deal-killing bar. Live URL is shared with the 2 pre-committed friends.
 - **Commits:** test-deal fixtures; prompt fixes from test findings; any rip-out of LLM-only mode if triggered; final deploy.
+- **Status (2026-05-21):** Pre-deploy plumbing done (token-usage logging, Upstash rate-limit no-op fallback, robots noindex, error boundary, OG image, `DEPLOY.md`). What remains: Vercel project link + env vars (per DEPLOY.md), run the 5 personal/friend deals, decide on LLM-only-mode kill if any fail, then share with Homayoon and Khalid.
 
 ---
 
