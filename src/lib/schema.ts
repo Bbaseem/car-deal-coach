@@ -35,13 +35,9 @@ export const coachOutputSchema = z
     manipulationCallouts: z.array(manipulationCalloutSchema),
     noCompsCoaching: noCompsCoachingSchema.optional(),
   })
-  .refine(
-    (v) => (v.lowConfidence ? v.noCompsCoaching != null : v.noCompsCoaching == null),
-    {
-      message:
-        'noCompsCoaching must be present iff lowConfidence is true.',
-      path: ['noCompsCoaching'],
-    },
-  );
+  .refine((v) => (v.lowConfidence ? v.noCompsCoaching != null : v.noCompsCoaching == null), {
+    message: 'noCompsCoaching must be present iff lowConfidence is true.',
+    path: ['noCompsCoaching'],
+  });
 
 export type CoachOutputParsed = z.infer<typeof coachOutputSchema>;
