@@ -13,10 +13,19 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 });
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: 'Car Deal Coach',
   description:
     'Mid-negotiation buyer coach: paste a dealer offer, get a hedged counter-offer script with per-line reasoning.',
+  openGraph: {
+    title: 'Car Deal Coach',
+    description:
+      'Paste a dealer offer mid-negotiation. Get a hedged counter-offer script with per-line reasoning.',
+    type: 'website',
+  },
 };
 
 export const viewport: Viewport = {
