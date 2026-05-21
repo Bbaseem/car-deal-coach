@@ -1,8 +1,9 @@
 import type { NextRequest } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { getAnthropicClient, getModel } from '@/lib/anthropic';
+import { coachOutputSchema } from '@/lib/schema';
 import { SUBMIT_COACHING_TOOL, SYSTEM_PROMPT } from '@/lib/systemPrompt';
-import type { ChatRequest, ChatResponse, CoachOutput, Round } from '@/lib/types';
+import type { ChatRequest, ChatResponse, Round } from '@/lib/types';
 
 export const runtime = 'nodejs';
 
@@ -126,8 +127,18 @@ export async function POST(request: NextRequest): Promise<Response> {
         502,
       );
     }
-    const output = toolUse.input as CoachOutput;
-    return jsonResponse({ ok: true, output });
+    const parsed = coachOutputSchema.safeParse(toolUse.input);
+    if (!parsed.success) {
+      const first = parsed.error.issues[0];
+      const summary = first
+        ? `${first.path.join('.') || 'root'}: ${first.message}`
+        : 'unknown shape error';
+      return jsonResponse(
+        { ok: false, error: `Model output failed validation (${summary}). Try regenerating.` },
+        502,
+      );
+    }
+    return jsonResponse({ ok: true, output: parsed.data });
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Anthropic request failed.';
     return jsonResponse({ ok: false, error: msg }, 502);
